@@ -1,77 +1,126 @@
-# app.py
 import streamlit as st
 import sounddevice as sd
 import numpy as np
+import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="AI Smart Classroom Noise Detection.", page_icon="🎓")
+st.set_page_config(
+    page_title="AI Smart Classroom Noise Detection",
+    page_icon="🎓"
+)
+
 st.title("🎓 AI Smart Classroom Noise Detection")
-st.write("Detect classroom noise levels in real-time using your microphone.")
+st.write("Detect classroom noise levels in real time using your microphone.")
+
+# -----------------------------
+# Initialize Session State
+# -----------------------------
+if "audio" not in st.session_state:
+    st.session_state.audio = None
 
 # -----------------------------
 # Function: Calculate dB
 # -----------------------------
 def calculate_db(audio):
-    rms = np.sqrt(np.mean(audio**2))
-    if rms == 0:
-        return 0
+
+    audio = audio.flatten()
+
+    rms = np.sqrt(np.mean(audio ** 2))
+
+    if rms <= 0:
+        return -100
+
     db = 20 * np.log10(rms)
-    return abs(db)
+
+    return db
 
 # -----------------------------
 # Function: Classify Noise
 # -----------------------------
 def classify_noise(db):
-    if db < 40:
+
+    if db < -45:
         return "Low Noise"
-    elif db < 70:
+
+    elif db < -25:
         return "Medium Noise"
+
     else:
         return "High Noise"
 
 # -----------------------------
-# Microphone Input
+# Settings
 # -----------------------------
-duration = st.slider("Recording Duration (seconds)", min_value=1, max_value=10, value=3)
-fs = 44100  # Sampling rate
+duration = st.slider(
+    "Recording Duration (seconds)",
+    1,
+    10,
+    3
+)
 
+fs = 44100
+
+# -----------------------------
+# Record Audio
+# -----------------------------
 if st.button("🎤 Record Classroom Sound"):
+
     st.info("Recording...")
+
     try:
-        audio = sd.rec(int(duration * fs), samplerate=fs, channels=1)
+
+        audio = sd.rec(
+            int(duration * fs),
+            samplerate=fs,
+            channels=1,
+            dtype="float32"
+        )
+
         sd.wait()
-        st.success("Recording finished!")
+
+        st.session_state.audio = audio
+
+        st.success("Recording Finished!")
 
         db = calculate_db(audio)
+
         status = classify_noise(db)
 
-        st.write(f"**Noise Level:** {db:.2f} dB")
-        st.write(f"**Status:** {status}")
+        st.metric("Noise Level", f"{db:.2f} dB")
+        st.metric("Status", status)
 
         if status == "High Noise":
             st.error("⚠ High noise detected! Please maintain silence.")
+
         elif status == "Medium Noise":
-            st.warning("⚠ Moderate noise. Try to be quieter.")
+            st.warning("⚠ Moderate noise. Try to reduce noise.")
+
         else:
-            st.success("✅ Low noise. Good environment for study.")
+            st.success("✅ Classroom is quiet.")
 
     except Exception as e:
-        st.error(f"Error recording audio: {e}")
+
+        st.error(f"Recording Error: {e}")
 
 # -----------------------------
-# Optional: Show Graph of Audio
+# Waveform
 # -----------------------------
 if st.checkbox("Show Audio Waveform"):
-    try:
-        import matplotlib.pyplot as plt
-        plt.figure(figsize=(8, 3))
-        plt.plot(audio)
-        plt.title("Audio Waveform")
-        plt.xlabel("Samples")
-        plt.ylabel("Amplitude")
-        st.pyplot(plt)
-    except Exception as e:
-        st.error(f"Error plotting waveform: {e}")
+
+    if st.session_state.audio is not None:
+
+        fig, ax = plt.subplots(figsize=(9,3))
+
+        ax.plot(st.session_state.audio[:,0])
+
+        ax.set_title("Recorded Audio Waveform")
+        ax.set_xlabel("Samples")
+        ax.set_ylabel("Amplitude")
+
+        st.pyplot(fig)
+
+    else:
+
+        st.warning("Please record audio first.")
 
 st.markdown("---")
-st.markdown("**Developed by:** Amna Mudassar Ali")
-
+st.markdown("**Developed by:** TEHREEN RAMESHA")
