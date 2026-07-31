@@ -3,7 +3,7 @@ import streamlit as st
 import sounddevice as sd
 import numpy as np
 
-st.set_page_config(page_title="AI Smart Classroom Noise Detection", page_icon="🎓")
+st.set_page_config(page_title="AI Smart Classroom Noise Detection.", page_icon="🎓")
 st.title("🎓 AI Smart Classroom Noise Detection")
 st.write("Detect classroom noise levels in real-time using your microphone.")
 
